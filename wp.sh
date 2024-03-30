@@ -13,14 +13,20 @@ fi
 # ===================================================
 printLines() {
   local content="$1"
-  local colorGreen='\033[0;32m'
+  local gColor='\033[0;32m' # Green.
+  local bColor='\033[0;34m' # Blue.
   local noColor='\033[0m'
 
-  echo -e "\n"
-  echo -e "${colorGreen}# =======================================================${noColor}"
-  echo -e "${colorGreen}# $content${noColor}"
-  echo -e "${colorGreen}# =======================================================${noColor}"
-  echo -e "\n"
+  # Check if the second argument is provided and set the color accordingly
+  if [[ -n "$2" && "$2" == "blue" ]]; then
+    local color=$bColor
+  else
+    local color=$gColor
+  fi
+
+  echo -e "\n${color}* -------------------------------------------------------${noColor}"
+  echo -e "${color}* $content${noColor}"
+  echo -e "${color}* -------------------------------------------------------${noColor}\n"
 }
 
 printLine() {
@@ -28,8 +34,16 @@ printLine() {
 	# Print in yellow color.
 	local color='\033[0;33m'
 
-	echo -e "${color}# $content${noColor}"
+	echo -e "\n${color}* $content${noColor}"
 }
+
+# ================================
+# Welcome message.
+# ===================================================
+printLines "🎓 Assignment: Cloud Computing, ISMT, Anuj Subedi 🎓" "blue"
+sleep 5
+
+cat /etc/os-release
 
 # ================================
 # Update and upgrade the system.
@@ -71,11 +85,11 @@ mkdir -p /var/www/html
 chown -R www-data:www-data /var/www/html
 chmod -R 755 /var/www/html
 
-sudo enable nginx
-sudo start nginx
+sytemctl enable nginx
+sytemctl status nginx
 
 sleep 2
-printLines "✅ Success, nginx installed."
+printLines "✅ Done, nginx installed."
 
 
 # ================================
@@ -90,8 +104,19 @@ ufw allow 'OpenSSH'
 # Pass yes to the prompt.
 echo "y" | ufw enable
 
-printLines "✅ Port added to firewall UFW."
+printLines "✅ Done, ports added to firewall UFW."
+
+# ================================
+# Install Git.
+# ===================================================
 sleep 2
+printLines "⌛ Doing - Installing Git."
+
+apt install git -y
+apt update -y
+
+sleep 2
+printLines "✅ Done, Git installed."
 
 # ================================
 # Install Docker, io, compose and cli.
@@ -100,8 +125,8 @@ printLines "⌛ Doing - Install docker."
 sleep 2
 
 apt update -y
-apt install ca-certificates curl
-apt install -m 0755 -d /etc/apt/keyrings
+apt install ca-certificates curl -y
+apt install -m 0755 -d /etc/apt/keyrings -y
 sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
 sudo chmod a+r /etc/apt/keyrings/docker.asc
 
@@ -116,7 +141,7 @@ apt update -y
 apt install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin -y
 
 sleep 2
-printLines "✅ Done, installing docker, io, cli and compose."
+printLines "✅ Done installing docker, io, cli and compose."
 
 # ================================
 # Install PHP 8.1, FPM, and other necessary PHP extensions for running WordPress.
@@ -131,7 +156,7 @@ apt update -y
 apt install php8.2-cli php8.2-common php8.2-fpm php8.2-mysql php8.2-zip php8.2-gd php8.2-mbstring php8.2-curl php8.2-xml php8.2-bcmath -y
 
 sleep 2
-printLines "✅ Done, installing PHP 8.1 and common extensions."
+printLines "✅ Done, installing PHP 8.1 and common PHP extensions."
 
 # ================================
 # Install mariaDB.
@@ -143,18 +168,17 @@ apt install expect -y
 apt install mariadb-server -y
 
 sleep 2
-printLines "✅ Success, MariaDB installed."
+printLines "✅ Done, MariaDB installed."
 
 # Enable.
 systemctl enable mariadb.service
-systemctl start mariadb.service
 
 # Prepare variables for MariaDB installation.
 PASSWORD="anujsubedi"
 USERNAME="anujsubedi"
 DATABASE="admin-db"
 
-printLines "⌛ Doing - Secure MariaDB installation. This might take some time."
+printLines "⌛ Doing - Secure MariaDB installation, this might take some time...."
 
 # Secure MariaDB installation
 SECURE_MYSQL=$(expect -c "
@@ -188,7 +212,7 @@ mysql -u root -p"$PASSWORD" -e "CREATE USER '$USERNAME'@'localhost' IDENTIFIED B
 mysql -u root -p"$PASSWORD" -e "GRANT ALL PRIVILEGES ON $DATABASE.* TO '$USERNAME'@'localhost';"
 mysql -u root -p"$PASSWORD" -e "FLUSH PRIVILEGES;"
 
-printLines "✅ MariaDB secure installation completed. Below are the credentials."
+printLines "✅ Done, MariaDB secure installation completed. Below are the credentials:"
 sleep 2
 
 # Print credentials.
@@ -196,12 +220,14 @@ printLine "MariaDB root credentials: "
 echo -e "Username: $USERNAME"
 echo -e "Password: $PASSWORD"
 
+sleep 5
+
 # Create new db, user and deligate all privileges.
 WPDB="enchanted-db"
 WPUSER="admin"
 WPPASS="admin"
 
-printLines "⌛ Doing - Create new db for WordPress."
+printLines "⌛ Doing - Create new database for WordPress."
 sleep 2
 
 mysql -u root -p"$PASSWORD" -e "CREATE DATABASE $WPDB;"
@@ -210,7 +236,7 @@ mysql -u root -p"$PASSWORD" -e "GRANT ALL PRIVILEGES ON $WPDB.* TO '$WPUSER'@'lo
 mysql -u root -p"$PASSWORD" -e "FLUSH PRIVILEGES;"
 
 sleep 2
-printLines "✅ Success, new db created for WordPress. Below is the credentials of db."
+printLines "✅ Done, new db created for WordPress. Below is the credentials: "
 
 # Print credentials.
 printLine "WP DB Credentials: "
@@ -222,7 +248,7 @@ echo -e "Password: $WPPASS"
 # Create nginx configuration file.
 # ===================================================
 sleep 5
-printLines "⌛ Doing - Create nginx configuration file."
+printLines "⌛ Doing - Create nginx configuration."
 
 cd /etc/nginx/sites-available
 
@@ -265,25 +291,13 @@ nginx -t
 systemctl restart nginx
 
 sleep 2
-printLines "✅ Success, nginx configuration file created."
-
-# ================================
-# Install Git.
-# ===================================================
-sleep 2
-printLines "⌛ Doing - Installing Git."
-
-apt install git -y
-apt update -y
-
-sleep 2
-printLines "✅ Success, Git installed."
+printLines "✅ Done, nginx configuration created."
 
 # ================================
 # Download WordPress.
 # ===================================================
 sleep 2
-printLines "⌛ Doing - Download WordPress."
+printLines "⌛ Doing - Downloading latest WordPress."
 
 cd /var/www/html
 
@@ -299,7 +313,7 @@ rm index.nginx-debian.html
 # Change ownership.
 chown -R www-data:www-data /var/www/html
 
-printLines "✅ Success, WordPress downloaded. Installing WordPress."
+printLines "✅ Success, WordPress downloaded."
 sleep 2
 
 # ================================
@@ -313,7 +327,7 @@ mv wp-config-sample.php wp-config.php
 
 # Update credentials.
 sleep 2
-printLines "⌛ Setting wp-config.php."
+printLines "⌛ Doing - Fixing wp-config.php."
 
 sed -i "s/database_name_here/$WPDB/g" wp-config.php
 sed -i "s/username_here/$WPUSER/g" wp-config.php
@@ -321,7 +335,7 @@ sed -i "s/password_here/$WPPASS/g" wp-config.php
 
 # Remove default salts.
 sleep 2
-printLines "⌛ Setting, WordPress salts."
+printLines "⌛ Doing - Fixing WordPress salts in wp-config.php."
 
 sed -i '/AUTH_KEY/d' wp-config.php
 sed -i '/SECURE_AUTH_KEY/d' wp-config.php
@@ -336,14 +350,14 @@ sed -i '/NONCE_SALT/d' wp-config.php
 curl -s https://api.wordpress.org/secret-key/1.1/salt/ >> wp-config.php
 
 # Print.
-printLines "✅ Success, WordPress installed."
+printLines "✅ Done, WordPress installed."
 
 # Get IP address.
 IP=$(hostname -I | awk '{print $1}')
 
-echo -e "🌍 WORPRESS URL: http://${IP} ✨"
+echo -e "🌍 Access WordPress at URL: http://${IP} ✨"
 
 # ================================
 # Finalize.
 # ===================================================
-printLines "✨ Done, everything completed. Exiting...✨"
+printLines "✨ Done, everything completed. GoodBye...✨"
