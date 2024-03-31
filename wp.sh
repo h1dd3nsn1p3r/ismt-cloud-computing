@@ -9,19 +9,32 @@ if [ "$(id -u)" != "0" ]; then
 fi
 
 # ================================
+# Define global variables.
+# ===================================================
+
+# For MariaDB.
+MYSQL_ROOT_PASS="anujsubedi"
+MYSQL_ROOT_USER="anujsubedi"
+
+# For WordPress.
+WPDB="wpdb"
+WPUSER="wpadmin"
+WPPASS="wpadmin"
+
+# ================================
 # Create helper functions.
 # ===================================================
 printLines() {
   local content="$1"
-  local gColor='\033[0;32m' # Green.
-  local bColor='\033[0;34m' # Blue.
+  local green='\033[0;32m' # Green.
+	local yellow='\033[0;33m' # Yellow.
   local noColor='\033[0m'
 
   # Check if the second argument is provided and set the color accordingly
-  if [[ -n "$2" && "$2" == "blue" ]]; then
-    local color=$bColor
+  if [[ -n "$2" && "$2" == "yellow" ]]; then
+    local color=$yellow
   else
-    local color=$gColor
+    local color=$green
   fi
 
   echo -e "\n${color}* -------------------------------------------------------${noColor}"
@@ -40,7 +53,7 @@ printLine() {
 # ================================
 # Welcome message.
 # ===================================================
-printLines "🎓 Assignment: Cloud Computing, ISMT, Anuj Subedi 🎓" "blue"
+printLines "🎓 Assignment: Cloud Computing, ISMT, Anuj Subedi 🎓" "yellow"
 sleep 5
 
 cat /etc/os-release
@@ -85,8 +98,7 @@ mkdir -p /var/www/html
 chown -R www-data:www-data /var/www/html
 chmod -R 755 /var/www/html
 
-sytemctl enable nginx
-sytemctl status nginx
+sudo systemctl enable nginx
 
 sleep 2
 printLines "✅ Done, nginx installed."
@@ -124,6 +136,13 @@ printLines "✅ Done, Git installed."
 printLines "⌛ Doing - Install docker."
 sleep 2
 
+# Remove all docker related packages.
+apt remove docker docker-engine docker.io containerd runc -y
+
+# Remove old docker repo.
+rm /etc/apt/sources.list.d/docker.list
+
+# Install docker.
 apt update -y
 apt install ca-certificates curl -y
 apt install -m 0755 -d /etc/apt/keyrings -y
@@ -171,12 +190,8 @@ sleep 2
 printLines "✅ Done, MariaDB installed."
 
 # Enable.
-systemctl enable mariadb.service
-
-# Prepare variables for MariaDB installation.
-PASSWORD="anujsubedi"
-USERNAME="anujsubedi"
-DATABASE="admin-db"
+sudo systemctl enable mariadb
+sudo mysqladmin version
 
 printLines "⌛ Doing - Secure MariaDB installation, this might take some time...."
 
@@ -189,9 +204,9 @@ send \"y\r\"
 expect \"Please enter 0 = LOW, 1 = MEDIUM and 2 = STRONG:\"
 send \"2\r\"
 expect \"New password:\"
-send \"$PASSWORD\r\"
+send \"$MYSQL_ROOT_PASS\r\"
 expect \"Re-enter new password:\"
-send \"$PASSWORD\r\"
+send \"$MYSQL_ROOT_PASS\r\"
 expect \"Do you wish to continue with the password provided?(Press y|Y for Yes, any other key for No) :\"
 send \"y\r\"
 expect \"Remove anonymous users? (Press y|Y for Yes, any other key for No) :\"
@@ -207,48 +222,55 @@ expect eof
 
 echo "$SECURE_MYSQL"
 
-# Create a new user and grant privileges
-mysql -u root -p"$PASSWORD" -e "CREATE USER '$USERNAME'@'localhost' IDENTIFIED BY '$PASSWORD';"
-mysql -u root -p"$PASSWORD" -e "GRANT ALL PRIVILEGES ON $DATABASE.* TO '$USERNAME'@'localhost';"
-mysql -u root -p"$PASSWORD" -e "FLUSH PRIVILEGES;"
+# Create a user.
+mysql -u root -p"$MYSQL_ROOT_PASS" -e "CREATE USER '$MYSQL_ROOT_USER'@'localhost' IDENTIFIED BY '$MYSQL_ROOT_PASS';"
+
+# Grant root privileges.
+mysql -u root -p"$MYSQL_ROOT_PASS" -e "GRANT ALL PRIVILEGES ON *.* TO '$MYSQL_ROOT_USER'@'localhost';"
+
+# Flush privileges.
+mysql -u root -p"$MYSQL_ROOT_PASS" -e "FLUSH PRIVILEGES;"
 
 printLines "✅ Done, MariaDB secure installation completed. Below are the credentials:"
 sleep 2
 
 # Print credentials.
 printLine "MariaDB root credentials: "
-echo -e "Username: $USERNAME"
-echo -e "Password: $PASSWORD"
+
+echo -e "MySQL root user: $MYSQL_ROOT_USER"
+echo -e "MySQL root password: $MYSQL_ROOT_PASS"
 
 sleep 5
-
-# Create new db, user and deligate all privileges.
-WPDB="enchanted-db"
-WPUSER="admin"
-WPPASS="admin"
-
 printLines "⌛ Doing - Create new database for WordPress."
 sleep 2
 
-mysql -u root -p"$PASSWORD" -e "CREATE DATABASE $WPDB;"
-mysql -u root -p"$PASSWORD" -e "CREATE USER '$WPUSER'@'localhost' IDENTIFIED BY '$WPPASS';"
-mysql -u root -p"$PASSWORD" -e "GRANT ALL PRIVILEGES ON $WPDB.* TO '$WPUSER'@'localhost';"
-mysql -u root -p"$PASSWORD" -e "FLUSH PRIVILEGES;"
+# Create db for wp.
+mysql -u root -p"$MYSQL_ROOT_PASS" -e "CREATE DATABASE $WPDB;"
+
+# Create user for wp.
+mysql -u root -p"$MYSQL_ROOT_PASS" -e "CREATE USER '$WPUSER'@'localhost' IDENTIFIED BY '$WPPASS';"
+
+# Grant access to wp db.
+mysql -u root -p"$MYSQL_ROOT_PASS" -e "GRANT ALL PRIVILEGES ON $WPDB.* TO '$WPUSER'@'localhost';"
+
+# Flush privileges.
+mysql -u root -p"$MYSQL_ROOT_PASS" -e "FLUSH PRIVILEGES;"
 
 sleep 2
-printLines "✅ Done, new db created for WordPress. Below is the credentials: "
+printLines "✅ Done, creating db for WordPress."
 
 # Print credentials.
 printLine "WP DB Credentials: "
-echo -e "Database: $WPDB"
-echo -e "Username: $WPUSER"
-echo -e "Password: $WPPASS"
+
+echo -e "WP DB: $WPDB"
+echo -e "WP DB user: $WPUSER"
+echo -e "WP DB pass: $WPPASS"
 
 # ================================
 # Create nginx configuration file.
 # ===================================================
 sleep 5
-printLines "⌛ Doing - Create nginx configuration."
+printLines "⌛ Doing - Creating nginx config."
 
 cd /etc/nginx/sites-available
 
@@ -288,7 +310,7 @@ rm /etc/nginx/sites-enabled/default
 nginx -t
 
 # Restart nginx.
-systemctl restart nginx
+sudo systemctl restart nginx
 
 sleep 2
 printLines "✅ Done, nginx configuration created."
@@ -352,12 +374,23 @@ curl -s https://api.wordpress.org/secret-key/1.1/salt/ >> wp-config.php
 # Print.
 printLines "✅ Done, WordPress installed."
 
+# ================================
+# Housekeeping.
+# ===================================================
+sleep 2
+printLines "⌛ Doing - Housekeeping (APT clean)."
+
+apt clean
+apt --autoremove
+
+sleep 2
+printLines "✨ Done, everything completed! ✨"
+
+# ================================
+# Print wp URL.
+# ===================================================
+
 # Get IP address.
 IP=$(hostname -I | awk '{print $1}')
 
-echo -e "🌍 Access WordPress at URL: http://${IP} ✨"
-
-# ================================
-# Finalize.
-# ===================================================
-printLines "✨ Done, everything completed. GoodBye...✨"
+printLine "🌍 Access WordPress at URL: http://${IP} ✨"
