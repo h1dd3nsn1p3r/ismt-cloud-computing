@@ -381,7 +381,7 @@ sleep 2
 printLines "⌛ Doing - Housekeeping (APT clean)."
 
 apt clean
-apt --autoremove
+apt autoremove
 
 sleep 2
 printLines "✨ Done, everything completed! ✨"
@@ -394,3 +394,4 @@ printLines "✨ Done, everything completed! ✨"
 IP=$(hostname -I | awk '{print $1}')
 
 printLine "🌍 Access WordPress at URL: http://${IP} ✨"
+echo -e "\n\n"
