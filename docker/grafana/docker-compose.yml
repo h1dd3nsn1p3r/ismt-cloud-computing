@@ -1,0 +1,22 @@
+version: '3.8'
+
+# Define the services
+services:
+  # Grafana service for data visualization
+  grafana:
+    # Use the official Grafana Docker image
+    image: grafana/grafana
+    # Define the container name
+    container_name: grafana
+    # Ensure the container restarts unless explicitly stopped
+    restart: unless-stopped
+    # Expose Grafana's web interface on port 3000
+    ports:
+      - "3000:3000"
+    # Mount Grafana's storage volume
+    volumes:
+      - grafana-storage:/var/lib/grafana
+
+# Define the volume for Grafana's data storage
+volumes:
+  grafana-storage:

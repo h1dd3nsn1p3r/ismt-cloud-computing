@@ -87,6 +87,19 @@ hostnamectl
 printLines "✅ Done, setting up timezone and hostname."
 sleep 2
 
+
+# ================================
+# Install Git.
+# ===================================================
+sleep 2
+printLines "⌛ Doing - Installing Git."
+
+apt install git -y
+apt update -y
+
+sleep 2
+printLines "✅ Done, Git installed."
+
 # ================================
 # Installed nginx.
 # ===================================================
@@ -118,49 +131,6 @@ echo "y" | ufw enable
 
 printLines "✅ Done, ports added to firewall UFW."
 
-# ================================
-# Install Git.
-# ===================================================
-sleep 2
-printLines "⌛ Doing - Installing Git."
-
-apt install git -y
-apt update -y
-
-sleep 2
-printLines "✅ Done, Git installed."
-
-# ================================
-# Install Docker, io, compose and cli.
-# ===================================================
-printLines "⌛ Doing - Install docker."
-sleep 2
-
-# Remove all docker related packages.
-apt remove docker docker-engine docker.io containerd runc -y
-
-# Remove old docker repo.
-rm /etc/apt/sources.list.d/docker.list
-
-# Install docker.
-apt update -y
-apt install ca-certificates curl -y
-apt install -m 0755 -d /etc/apt/keyrings -y
-sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
-sudo chmod a+r /etc/apt/keyrings/docker.asc
-
-# Add the repository to Apt sources:
-echo \
-  "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu \
-  $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
-  sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-
-# Update repo.
-apt update -y
-apt install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin -y
-
-sleep 2
-printLines "✅ Done installing docker, io, cli and compose."
 
 # ================================
 # Install PHP 8.1, FPM, and other necessary PHP extensions for running WordPress.
@@ -371,6 +341,14 @@ sed -i '/NONCE_SALT/d' wp-config.php
 # WordPress salts.
 curl -s https://api.wordpress.org/secret-key/1.1/salt/ >> wp-config.php
 
+# Fix permissions.
+sleep 2
+printLines "⌛ Doing - Fixing permissions."
+
+chown -R www-data:www-data /var/www/html
+chmod -R 755 /var/www/html
+chown -R www-data:www-data /var/www/html/wp-content/uploads
+
 # Print.
 printLines "✅ Done, WordPress installed."
 
@@ -385,13 +363,3 @@ apt autoremove
 
 sleep 2
 printLines "✨ Done, everything completed! ✨"
-
-# ================================
-# Print wp URL.
-# ===================================================
-
-# Get IP address.
-IP=$(hostname -I | awk '{print $1}')
-
-printLine "🌍 Access WordPress at URL: http://${IP} ✨"
-echo -e "\n\n"
